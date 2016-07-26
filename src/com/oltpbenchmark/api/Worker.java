@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
@@ -50,6 +51,7 @@ public abstract class Worker implements Runnable {
     
     // Interval requests used by the monitor
     private AtomicInteger intervalRequests = new AtomicInteger(0);
+    private AtomicLong intervalLatencies = new AtomicLong(0);
 	
 	private final int id;
 	private final BenchmarkModule benchmarkModule;
@@ -138,8 +140,21 @@ public abstract class Worker implements Runnable {
         return latencies.size();
     }
 	
-    public final int getAndResetIntervalRequests() {
-        return intervalRequests.getAndSet(0);
+    public final int getIntervalRequests() {
+        return intervalRequests.get();
+    }
+
+    public final void resetIntervalRequests() {
+        intervalRequests.set(0);
+    }
+
+    public final long getIntervalLatenciesAverage() {
+        long latencyAve = intervalLatencies.get() / (long)intervalRequests.get();
+        return latencyAve;
+    }
+
+    public final void resetIntervalLatencies() {
+        intervalLatencies.set(0);
     }
     
     public final Iterable<LatencyRecord.Sample> getLatencyRecords() {
@@ -321,6 +336,8 @@ work:
                         latencies.addLatency(type.getId(), start, end, this.id
                                 , phase.id);
                         intervalRequests.incrementAndGet();
+                        long latent = ((end - start + 500) / 1000);
+                        intervalLatencies.addAndGet(latent);
                     }
                     if (phase.isLatencyRun())
                         this.wrkldState.startColdQuery();
