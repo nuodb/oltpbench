@@ -50,6 +50,8 @@ public class WorkloadConfiguration {
 	private double scaleFactor = 1.0;
 	private int terminals;
 	private int numTxnTypes;
+	private int partitionCount;
+	private List<String> storageGroups;
     private TraceReader traceReader = null;
     public TraceReader getTraceReader() {
         return traceReader;
@@ -155,9 +157,19 @@ public class WorkloadConfiguration {
 
 	public int getClientId() { return this.clientId; }
 
+	public void setStorageGroups(List<String> storageGroups) { this.storageGroups = storageGroups; }
+
+	public List<String> getStorageGroups() {
+		return this.storageGroups;
+	}
+
 	public void setRecordAbortMessages(boolean recordAbortMessages) {
         this.recordAbortMessages = recordAbortMessages;
     }
+
+	public void setPartitionCount(int partitionCount) { this.partitionCount = partitionCount; }
+
+	public int getPartitionCount() { return this.partitionCount; }
 	
 	/**
 	 * Whether each worker should record the transaction's UserAbort messages

@@ -17,13 +17,17 @@
 
 package com.oltpbenchmark.api;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +39,6 @@ import org.apache.log4j.Logger;
 
 import com.oltpbenchmark.WorkloadConfiguration;
 import com.oltpbenchmark.catalog.Catalog;
-import com.oltpbenchmark.catalog.Table;
 import com.oltpbenchmark.types.DatabaseType;
 import com.oltpbenchmark.util.ClassUtil;
 import com.oltpbenchmark.util.ScriptRunner;
@@ -189,17 +192,34 @@ public abstract class BenchmarkModule {
      * @throws SQLException 
      */
     public URL getDatabaseDDL(DatabaseType db_type) {
-        String ddlNames[] = {
-                this.benchmarkName + "-" + (db_type != null ? db_type.name().toLowerCase() : "") + "-ddl.sql",
-                this.benchmarkName + "-ddl.sql",
-        };
 
-        for (String ddlName : ddlNames) {
+        ArrayList<Object> ddlNames = new ArrayList<Object>();
+        if (db_type.name().equalsIgnoreCase("nuodb") && this.workConf.getPartitionCount() > 0) {
+            try {
+                ddlNames.add(this.buildTpsgDDL());
+            } catch (IOException ex) {
+                throw new RuntimeException(String.format("Unexpected error when trying generate TPSG DDL for %s database", this.benchmarkName), ex);
+            }
+        } else {
+            ddlNames.add(this.benchmarkName + "-" + (db_type != null ? db_type.name().toLowerCase() : "") + "-ddl.sql");
+        }
+        ddlNames.add(this.benchmarkName + "-ddl.sql");
+
+        for (Object ddlName : ddlNames) {
             if (ddlName == null) continue;
-            URL ddlURL = this.getClass().getResource(ddlName);
-            if (ddlURL != null) return ddlURL;
+            if (ddlName instanceof String) {
+                URL ddlURL = this.getClass().getResource((String) ddlName);
+                if (ddlURL != null) return ddlURL;
+            }
+            if (ddlName instanceof File) {
+                try {
+                    return ((File) ddlName).toURI().toURL();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+            }
         } // FOR
-        LOG.trace(ddlNames[0]+" :or: "+ddlNames[1]);
+        LOG.trace(ddlNames.get(0).toString() + " :or: " + ddlNames.get(1).toString());
         LOG.error("Failed to find DDL file for " + this.benchmarkName);
         return null;
     }
@@ -432,6 +452,44 @@ public abstract class BenchmarkModule {
      */
     public final void registerSupplementalProcedure(Class<? extends Procedure> procClass) {
         this.supplementalProcedures.add(procClass);
+    }
+
+    public final File buildTpsgDDL() throws IOException {
+        File tpsgDDLFile;
+            int partitionCount = this.workConf.getPartitionCount();
+            List<String> storageGroups = this.workConf.getStorageGroups();
+            int storageGroupCount = storageGroups.size();
+            int keySpaceMax = (int)(this.workConf.getScaleFactor() * 1000);
+            int partitionSize = keySpaceMax / storageGroupCount;
+
+            String tpsgTemplate = this.benchmarkName + "-nuodb-tpsg-ddl.template";
+            tpsgDDLFile = File.createTempFile(this.benchmarkName + "-nuodb-tpsg-ddl", "sql");
+            FileWriter tpsgDDLWriter = new FileWriter(tpsgDDLFile);
+
+            BufferedReader tpsgTemplateFile = new BufferedReader(new InputStreamReader(this.getClass().getResource(tpsgTemplate).openStream()));
+            String line = null;
+            while ((line = tpsgTemplateFile.readLine()) != null) {
+                tpsgDDLWriter.write(line);
+                tpsgDDLWriter.write("\n");
+            }
+            tpsgTemplateFile.close();
+
+            tpsgDDLWriter.write("(\n");
+            int sg = -1;
+            for (int i = 0; i < partitionCount; i++) {
+                if ((i % (partitionCount/storageGroupCount)) == 0 ) {
+                    sg++;
+                }
+                if ((i+1) == partitionCount) {
+                    tpsgDDLWriter.write(String.format("PARTITION p%d VALUES LESS THAN (MAXVALUE) STORE IN %s\n", i, storageGroups.get(sg)));
+                } else {
+                    tpsgDDLWriter.write(String.format("PARTITION p%d VALUES LESS THAN ('%d') STORE IN %s\n", i, (i + 1) * partitionSize, storageGroups.get(sg)));
+                }
+            }
+            tpsgDDLWriter.write(");\n");
+            tpsgDDLWriter.close();
+
+        return tpsgDDLFile;
     }
 
 }

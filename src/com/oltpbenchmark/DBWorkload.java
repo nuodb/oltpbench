@@ -20,6 +20,7 @@ package com.oltpbenchmark;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -137,6 +138,8 @@ public class DBWorkload {
         options.addOption(null, "dialects-export", true, "Export benchmark SQL to a dialects file");
         options.addOption(null, "client-count", true, "Number of client machines running the workload");
         options.addOption(null, "client-id", true, "Which client from 0 to client-count - 1");
+        options.addOption("pc", "partition-count", true, "Number of table paritions");
+        options.addOption("sg", "storage-groups", true, "Comma separated list of storage group names");
 
         // parse the command line arguments
         CommandLine argsLine = parser.parse(options, args);
@@ -172,7 +175,9 @@ public class DBWorkload {
 
         int clientCount = Integer.parseInt(argsLine.getOptionValue("client-count", "1"));
         int clientId = Integer.parseInt(argsLine.getOptionValue("client-id", "0"));
+        int partitionCount = Integer.parseInt(argsLine.getOptionValue("partition-count", "0"));
 
+        List<String> storageGroups = new ArrayList<String>(Arrays.asList(argsLine.getOptionValue("storage-groups", "").split(",")));
         // -------------------------------------------------------------------
         // GET PLUGIN LIST
         // -------------------------------------------------------------------
@@ -203,6 +208,8 @@ public class DBWorkload {
             wrkld.setXmlConfig(xmlConfig);
             wrkld.setClientId(clientId);
             wrkld.setClientCount(clientCount);
+            wrkld.setPartitionCount(partitionCount);
+            wrkld.setStorageGroups(storageGroups);
             boolean scriptRun = false;
             if (argsLine.hasOption("t")) {
                 scriptRun = true;

@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -63,7 +64,7 @@ public class YCSBLoader extends Loader {
             }
         }
         System.out.println("existing tables = " + sb.toString());
-        
+
         String sql = SQLUtil.getInsertSQL(catalog_tbl);
         PreparedStatement stmt = this.conn.prepareStatement(sql);
         long total = 0;
