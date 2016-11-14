@@ -62,7 +62,7 @@ public class YCSBBenchmark extends BenchmarkModule {
             for (int i = 0; i < workConf.getTerminals(); ++i) {
 //                Connection conn = this.makeConnection();
 //                conn.setAutoCommit(false);
-                workers.add(new YCSBWorker(i, this, init_record_count + 1));
+                workers.add(new YCSBWorker(i, this, init_record_count + 1, this.workConf.getClientId(), this.workConf.getClientCount()));
             } // FOR
             metaConn.close();
         } catch (SQLException e) {

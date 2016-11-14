@@ -33,27 +33,32 @@ import com.oltpbenchmark.benchmarks.ycsb.procedures.ReadRecord;
 import com.oltpbenchmark.benchmarks.ycsb.procedures.ScanRecord;
 import com.oltpbenchmark.benchmarks.ycsb.procedures.UpdateRecord;
 import com.oltpbenchmark.distributions.CounterGenerator;
-import com.oltpbenchmark.distributions.ZipfianGenerator;
+import com.oltpbenchmark.distributions.FocusedZipfianGenerator;
 import com.oltpbenchmark.types.TransactionStatus;
 import com.oltpbenchmark.util.TextGenerator;
 
 public class YCSBWorker extends Worker {
 
-    private ZipfianGenerator readRecord;
+    private FocusedZipfianGenerator readRecord;
     private static CounterGenerator insertRecord;
-    private ZipfianGenerator randScan;
+    private FocusedZipfianGenerator randScan;
 
     private final Map<Integer, String> m = new HashMap<Integer, String>();
     
-    public YCSBWorker(int id, BenchmarkModule benchmarkModule, int init_record_count) {
+    public YCSBWorker(int id, BenchmarkModule benchmarkModule, int init_record_count, int clientId, int clientCount) {
         super(benchmarkModule, id);
-        readRecord = new ZipfianGenerator(init_record_count);// pool for read keys
-        randScan = new ZipfianGenerator(YCSBConstants.MAX_SCAN);
-        
+        System.out.println("Initailizing worker: " + id + " with Client Count: " + clientCount + " Client Id: " + clientId);
+        readRecord = new FocusedZipfianGenerator(0, init_record_count, clientId, clientCount);// pool for read keys
+        randScan = new FocusedZipfianGenerator(0, YCSBConstants.MAX_SCAN, clientId, clientCount);
+
+        // Divide up the keyspace so that each client can do the same number of inserts.
+        int insertSpaceSize = (Integer.MAX_VALUE - init_record_count) / clientCount;
+        int insertSpaceOffset = clientId * insertSpaceSize ;
+
         synchronized (YCSBWorker.class) {
             // We must know where to start inserting
             if (insertRecord == null) {
-                insertRecord = new CounterGenerator(init_record_count);
+                insertRecord = new CounterGenerator(init_record_count + insertSpaceOffset);
             }
         } // SYNCH
     }

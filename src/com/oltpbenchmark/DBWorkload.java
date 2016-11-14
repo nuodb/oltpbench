@@ -135,6 +135,8 @@ public class DBWorkload {
         options.addOption("ts", "tracescript", true, "Script of transactions to execute");
         options.addOption(null, "histograms", false, "Print txn histograms");
         options.addOption(null, "dialects-export", true, "Export benchmark SQL to a dialects file");
+        options.addOption(null, "client-count", true, "Number of client machines running the workload");
+        options.addOption(null, "client-id", true, "Which client from 0 to client-count - 1");
 
         // parse the command line arguments
         CommandLine argsLine = parser.parse(options, args);
@@ -167,7 +169,10 @@ public class DBWorkload {
         if (argsLine.hasOption("im")) {
             intervalMonitor = Integer.parseInt(argsLine.getOptionValue("im"));
         }
-        
+
+        int clientCount = Integer.parseInt(argsLine.getOptionValue("client-count", "1"));
+        int clientId = Integer.parseInt(argsLine.getOptionValue("client-id", "0"));
+
         // -------------------------------------------------------------------
         // GET PLUGIN LIST
         // -------------------------------------------------------------------
@@ -196,6 +201,8 @@ public class DBWorkload {
             WorkloadConfiguration wrkld = new WorkloadConfiguration();
             wrkld.setBenchmarkName(plugin);
             wrkld.setXmlConfig(xmlConfig);
+            wrkld.setClientId(clientId);
+            wrkld.setClientCount(clientCount);
             boolean scriptRun = false;
             if (argsLine.hasOption("t")) {
                 scriptRun = true;

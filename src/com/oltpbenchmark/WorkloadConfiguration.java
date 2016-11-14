@@ -81,6 +81,8 @@ public class WorkloadConfiguration {
 	private int isolationMode = Connection.TRANSACTION_SERIALIZABLE;
 	private boolean recordAbortMessages = false;
     private String dataDir = null;
+	private int clientId;
+	private int clientCount;
 
  
 
@@ -144,7 +146,15 @@ public class WorkloadConfiguration {
 	public String getDBDriver() {
 		return this.db_driver;
 	}
-	
+
+	public void setClientCount(int clientCount) { this.clientCount = clientCount; }
+
+	public int getClientCount() { return this.clientCount; }
+
+	public void setClientId(int clientId) { this.clientId = clientId; }
+
+	public int getClientId() { return this.clientId; }
+
 	public void setRecordAbortMessages(boolean recordAbortMessages) {
         this.recordAbortMessages = recordAbortMessages;
     }
