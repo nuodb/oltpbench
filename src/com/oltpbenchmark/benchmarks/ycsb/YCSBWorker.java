@@ -47,7 +47,6 @@ public class YCSBWorker extends Worker {
     
     public YCSBWorker(int id, BenchmarkModule benchmarkModule, int init_record_count, int clientId, int clientCount) {
         super(benchmarkModule, id);
-        System.out.println("Initailizing worker: " + id + " with Client Count: " + clientCount + " Client Id: " + clientId);
         readRecord = new FocusedZipfianGenerator(0, init_record_count, clientId, clientCount);// pool for read keys
         randScan = new FocusedZipfianGenerator(0, YCSBConstants.MAX_SCAN, clientId, clientCount);
 
