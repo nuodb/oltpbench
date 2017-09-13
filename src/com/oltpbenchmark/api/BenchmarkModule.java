@@ -466,7 +466,8 @@ public abstract class BenchmarkModule {
             tpsgDDLFile = File.createTempFile(this.benchmarkName + "-nuodb-tpsg-ddl", "sql");
             FileWriter tpsgDDLWriter = new FileWriter(tpsgDDLFile);
 
-            BufferedReader tpsgTemplateFile = new BufferedReader(new InputStreamReader(this.getClass().getResource(tpsgTemplate).openStream()));
+            URL templateURL = this.getClass().getResource(tpsgTemplate);
+            BufferedReader tpsgTemplateFile = new BufferedReader(new InputStreamReader(templateURL.openStream()));
             String line = null;
             while ((line = tpsgTemplateFile.readLine()) != null) {
                 tpsgDDLWriter.write(line);

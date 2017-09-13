@@ -48,6 +48,7 @@
             <fileset dir="${src.dir}">
                 <include name="**/*-ddl.sql"/>
                 <include name="**/*-dialects.xml"/>
+                <include name="**/*-ddl.template"/>
                 <include name="**/*.xsd"/>
                 <include name="**/histogram.*.gz"/>
                 <include name="**/table.*.gz"/>
