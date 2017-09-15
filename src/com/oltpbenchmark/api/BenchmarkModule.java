@@ -17,11 +17,13 @@
 
 package com.oltpbenchmark.api;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
@@ -468,27 +470,37 @@ public abstract class BenchmarkModule {
 
             URL templateURL = this.getClass().getResource(tpsgTemplate);
             BufferedReader tpsgTemplateFile = new BufferedReader(new InputStreamReader(templateURL.openStream()));
+            StringBuilder fullSchema = new StringBuilder();
             String line = null;
             while ((line = tpsgTemplateFile.readLine()) != null) {
                 tpsgDDLWriter.write(line);
                 tpsgDDLWriter.write("\n");
+                fullSchema.append(line).append("\n");
             }
             tpsgTemplateFile.close();
 
             tpsgDDLWriter.write("(\n");
+            fullSchema.append("\n");
             int sg = -1;
             for (int i = 0; i < partitionCount; i++) {
                 if ((i % (partitionCount/storageGroupCount)) == 0 ) {
                     sg++;
                 }
                 if ((i+1) == partitionCount) {
-                    tpsgDDLWriter.write(String.format("PARTITION p%d VALUES LESS THAN (MAXVALUE) STORE IN %s\n", i, storageGroups.get(sg)));
+                    line = String.format("PARTITION p%d VALUES LESS THAN (MAXVALUE) STORE IN %s\n", i, storageGroups.get(sg));
                 } else {
-                    tpsgDDLWriter.write(String.format("PARTITION p%d VALUES LESS THAN ('%d') STORE IN %s\n", i, (i + 1) * partitionSize, storageGroups.get(sg)));
+                    line = String.format("PARTITION p%d VALUES LESS THAN ('%d') STORE IN %s\n", i, (i + 1) * partitionSize, storageGroups.get(sg));
                 }
+                tpsgDDLWriter.write(line);
+                fullSchema.append(line);
             }
             tpsgDDLWriter.write(");\n");
+            fullSchema.append("\n");
             tpsgDDLWriter.close();
+
+            // Normally, one could just look at the ddl file in the source.
+            // line parameters, log for posterity
+            LOG.info("generated storage group schema:\n" + fullSchema.toString());
 
         return tpsgDDLFile;
     }
